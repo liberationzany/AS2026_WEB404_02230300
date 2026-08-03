@@ -1,0 +1,5 @@
+uploads/vulnerable/*
+uploads/safe/*
+!uploads/vulnerable/.gitkeep
+!uploads/safe/.gitkeep
+__pycache__/
