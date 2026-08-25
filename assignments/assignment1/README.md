@@ -1,8 +1,18 @@
 # Practical Report: SQL Injection Vulnerability Assessment
 
-**Course:** WEB404 — Web Application Development  
-**Practical:** 5 — Vulnerable web application and SQL injection  
+**Module:** WEB404 Secure Coding Practices
+**Practical:** 5 — Vulnerable web application and SQL injection
 **Student:** Sonam Tenzin
+**Date:** 2026-08-25
+
+## Vulnerability Summary
+
+| ID | Vulnerability | CWE | OWASP Category | Severity |
+| --- | --- | --- | --- | --- |
+| V1 | Authentication bypass via comment injection | CWE-89 | A03:2021 — Injection | Critical |
+| V2 | Error-based SQL injection (verbose DB errors) | CWE-89 | A03:2021 — Injection | Medium |
+| V3 | UNION-based data extraction | CWE-89 | A03:2021 — Injection | Critical |
+| V4 | Boolean-blind SQL injection | CWE-89 | A03:2021 — Injection | High |
 
 ## 1. Objective
 
@@ -12,7 +22,17 @@ The purpose of this practical was to set up a deliberately vulnerable web applic
 
 All testing was carried out against a self-created application on `127.0.0.1` (localhost). The application uses fictional accounts and a disposable SQLite database. No external system, real account, or network service was tested. SQL injection testing must only be performed with explicit authorisation.
 
-## 3. Environment and setup
+## 3. Testing methodology
+
+This assessment followed a structured black-box methodology consistent with standard injection-testing practice:
+
+1. **Baseline verification** — confirm the login and search features behave correctly with valid input before attempting any injection (Test 1).
+2. **Input probing** — submit a single quotation mark to detect whether unsanitised input reaches the SQL layer, evidenced by a database syntax error (Test 3).
+3. **Exploitation** — construct comment-based, UNION-based, and boolean-based payloads to demonstrate concrete impact: authentication bypass, data extraction, and true/false inference (Tests 2, 4, 5).
+4. **Control verification** — repeat the identical payloads against the parameterized `/safe-search` endpoint to confirm the fix holds under the same conditions that broke the vulnerable page.
+5. **Reporting** — document each payload, the resulting query, and the observed impact, classified against CWE-89 above.
+
+## 4. Environment and setup
 
 | Component | Details |
 | --- | --- |
@@ -31,7 +51,7 @@ python app.py
 
 The server was intentionally restricted to localhost. On every launch, it recreated `training_lab.db` containing three fictional users: `alice`, `bob`, and `instructor`.
 
-## 4. Vulnerability description
+## 5. Vulnerability description
 
 SQL injection occurs when an application combines untrusted user input directly into an SQL statement. The vulnerable login page used string formatting in the following pattern:
 
@@ -42,7 +62,7 @@ WHERE username = '<username input>' AND password = '<password input>'
 
 Because the input was inserted directly into the query, quotation marks, SQL operators, and comments supplied by a user could alter the intended query logic.
 
-## 5. Test results
+## 6. Test results
 
 ### Test 1: Normal authentication baseline
 
@@ -120,7 +140,7 @@ Unlike the search page, this endpoint does not show records, query text, or data
 
 ![Figure 5b: Boolean-blind SQL injection response showing "Account exists."](assets/test5.png)
 
-## 6. Security impact
+## 7. Security impact
 
 The findings show that SQL injection can have serious consequences:
 
@@ -131,7 +151,7 @@ The findings show that SQL injection can have serious consequences:
 
 Although this lab uses fictional data, storing or exposing plain-text passwords would be especially harmful in a real application.
 
-## 7. Mitigation and verification
+## 8. Mitigation and verification
 
 The application included a **Safe search** page as a comparison. It used a parameterized query instead of placing the supplied value inside SQL text:
 
@@ -158,9 +178,26 @@ Recommended defenses are:
 - Use a database account with only the permissions required by the application.
 - Validate input as an additional control, while recognising that validation does not replace parameterized queries.
 
-## 8. Conclusion
+## 9. Module concepts applied
+
+| Module topic | How it was applied |
+| --- | --- |
+| 2.1.1 Types of SQL injection | Demonstrated error-based (Test 3) and UNION-based (Test 4) variants |
+| 2.1.2 Blind SQL injection | Demonstrated in Test 5 via true/false inference on the blind-check endpoint |
+| 2.1.3 / 2.7.2 SQL injection prevention / Parameterized queries | Demonstrated by the `/safe-search` comparison in Section 8 |
+| 2.6.1 Authentication bypass techniques | Demonstrated in Test 2 via comment-based tautology bypass |
+| 2.4.2 Error message handling | Discussed in Section 7 regarding verbose database errors leaking schema information |
+| 2.7.1 Input validation and sanitization | Discussed in Section 8 as defense-in-depth alongside parameterization |
+
+## 10. Conclusion
 
 The practical successfully demonstrated four SQL injection outcomes in a controlled local environment: authentication bypass, error-based discovery, UNION-based data extraction, and Boolean-blind inference. The vulnerable pages failed because they inserted user input directly into SQL statements. The parameterized implementation prevented the same payloads from changing the query logic. Therefore, prepared statements and secure password handling are essential controls for web applications that use databases.
+
+## References
+
+- Stuttard, D., & Pinto, M. (2011). *The Web Application Hacker's Handbook: Finding and Exploiting Security Flaws* (Ch. 9, Attacking Data Stores). John Wiley & Sons.
+- OWASP Foundation. *SQL Injection Prevention Cheat Sheet*. owasp.org.
+- MITRE. *CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')*. cwe.mitre.org.
 
 ## Appendix: Running and cleanup
 
