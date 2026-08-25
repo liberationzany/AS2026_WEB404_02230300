@@ -51,7 +51,7 @@ Because the string is handed to a real shell, any shell metacharacter supplied b
 | Page | Home page |
 | Result | Confirmed both ping features were reachable before testing began. |
 
-![Figure 1: Home page listing both ping features](assets/test1_home.jpg)
+![Figure 1: Home page listing both ping features](assets/test1_home.png)
 
 ### Test 2: Normal input on the vulnerable endpoint
 
