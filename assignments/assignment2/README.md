@@ -1,6 +1,17 @@
 # Practical Report: File Upload Security Assessment
 
-**Submitted by:** Sonam Tenzin
+**Module:** WEB404 Secure Coding Practices
+**Practical:** 3 — File upload feature and malicious upload prevention
+**Student:** Sonam Tenzin
+**Date:** 2026-08-25
+
+## Vulnerability Summary
+
+| ID | Vulnerability | CWE | OWASP Category | Severity |
+| --- | --- | --- | --- | --- |
+| V1 | Unrestricted file upload → stored XSS | CWE-434 | A03:2021 — Injection | Critical |
+| V2 | Extension/content-type spoofing (design gap, tested and blocked) | CWE-434 | A04:2021 — Insecure Design | Medium |
+| V3 | Directory traversal via client-supplied filename | CWE-22 | A01:2021 — Broken Access Control | High |
 
 ## 1. Objective
 
@@ -8,9 +19,19 @@ The purpose of this practical was to build a file upload feature, deliberately i
 
 ## 2. Ethical scope
 
-All testing was carried out against a self-created application on `127.0.0.1` (localhost). Only files created for this exercise were uploaded. No external system was tested. The vulnerable endpoint's file-write path is additionally constrained by a sandbox guard (Section 4) so that testing directory-traversal payloads cannot write outside the lab folder.
+All testing was carried out against a self-created application on `127.0.0.1` (localhost). Only files created for this exercise were uploaded. No external system was tested. The vulnerable endpoint's file-write path is additionally constrained by a sandbox guard (Section 5) so that testing directory-traversal payloads cannot write outside the lab folder.
 
-## 3. Environment and setup
+## 3. Testing methodology
+
+This assessment followed a structured black-box methodology for upload-handling security:
+
+1. **Baseline verification** — confirm both upload features are reachable and accept a request (Test 1).
+2. **Malicious-type probing** — upload a file containing an executable script under an unrestricted extension to test whether type is enforced at all (Test 2).
+3. **Evasion testing** — attempt to bypass an extension allow-list by disguising a script as a trusted type, and by submitting a filename engineered for path traversal (Tests 3, 6).
+4. **Control verification** — repeat the identical payloads against the validated `/safe-upload` endpoint to confirm each control independently blocks the corresponding technique (Tests 3–5).
+5. **Reporting** — document the accepted/rejected outcome and the specific control responsible, classified against CWE-434 and CWE-22 above.
+
+## 4. Environment and setup
 
 | Component | Details |
 | --- | --- |
@@ -32,7 +53,7 @@ The server binds only to `127.0.0.1` and exposes two upload features:
 - `/vulnerable-upload` — no validation of any kind.
 - `/safe-upload` — extension allow-list, magic-byte content verification, a size limit, and randomly generated storage filenames.
 
-## 4. Vulnerability description
+## 5. Vulnerability description
 
 The vulnerable endpoint saves the uploaded file using the client-supplied filename and serves it back later with a content type guessed from that same filename:
 
@@ -49,7 +70,7 @@ Because nothing about the file, be it its extension, its content, or its size is
 - **No size limit.** A client can upload arbitrarily large files (bounded only by a lab-machine hard cap that exists to protect this demo server, not as a feature of the vulnerable code).
 - **Filename-driven path construction.** Building a filesystem path directly from client input is a directory-traversal risk, a filename like `../../evil.txt` (or an absolute path) can resolve outside the intended upload folder. A sandbox guard in `app.py` intercepts this before any write happens and reports what *would* have occurred, so the underlying weakness in the vulnerable code is demonstrated without letting a test payload touch files outside the lab folder.
 
-## 5. Test results
+## 6. Test results
 
 ### Test 1: Baseline
 
@@ -129,7 +150,7 @@ filename to build a filesystem path.
 
 No file was written outside `uploads/vulnerable`. This confirms that building a filesystem path from an unvalidated filename is the underlying flaw, independent of the safety net that contains it for this lab.
 
-## 6. Security impact
+## 7. Security impact
 
 Together, the tests show what an unrestricted upload feature exposes:
 
@@ -139,7 +160,7 @@ Together, the tests show what an unrestricted upload feature exposes:
 - **Resource exhaustion** — with no size limit, uploads can consume disk space or memory disproportionately.
 - **Malware hosting / phishing** — an application that accepts and serves arbitrary files can be used to distribute malicious content under a trusted domain.
 
-## 7. Mitigation and verification
+## 8. Mitigation and verification
 
 The `/safe-upload` feature applies defense in depth rather than relying on any single check:
 
@@ -178,9 +199,27 @@ Recommended defenses for a production upload feature are:
 - Serve uploaded content with `X-Content-Type-Options: nosniff` and, for non-safe-to-render types, `Content-Disposition: attachment`.
 - Where possible, store uploads outside the web root or in object storage without execute permissions, and scan content for embedded scripts.
 
-## 8. Conclusion
+## 9. Module concepts applied
+
+| Module topic | How it was applied |
+| --- | --- |
+| 2.3.1 Malicious file uploads | Demonstrated in Test 2 (stored XSS via an unrestricted `.html` upload) |
+| 2.3.2 File type and content validation | Demonstrated in Tests 3–4 (magic-byte sniffing and extension allow-list) |
+| 2.3.3 Secure file handling practices | Demonstrated in Test 5 (random storage filenames, `nosniff`, forced download) |
+| 2.2.1 Path manipulation techniques | Demonstrated in Test 6 (filename-based directory traversal attempt) |
+| 2.2.2 Preventing directory traversal attacks | Mitigated by never using the client-supplied filename to build a filesystem path |
+| 2.7.1 Input validation and sanitization | Underlies every check performed by `/safe-upload` |
+
+## 10. Conclusion
 
 The practical demonstrated that an upload feature without validation allows stored cross-site scripting, is vulnerable to extension spoofing, and is exposed to directory traversal through the filename alone. An allow-list combined with magic-byte content verification, a size limit, random storage filenames, and safe response headers blocked every payload that succeeded against the vulnerable version, while still accepting legitimate files. Filename-based checks alone are not sufficient — content must be verified independently of what the client claims it is.
+
+## References
+
+- OWASP Foundation. *File Upload Cheat Sheet*. owasp.org.
+- MITRE. *CWE-434: Unrestricted Upload of File with Dangerous Type*. cwe.mitre.org.
+- MITRE. *CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')*. cwe.mitre.org.
+- Stuttard, D., & Pinto, M. (2011). *The Web Application Hacker's Handbook: Finding and Exploiting Security Flaws*. John Wiley & Sons.
 
 ## Appendix: Running and cleanup
 
