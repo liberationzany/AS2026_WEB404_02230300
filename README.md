@@ -1,8 +1,5 @@
 # WEB404 Secure Coding Practices
 
-**Programme:** BE in Software Engineering
-**Student:** Sonam Tenzin
-
 This repository contains the practical assignments for the WEB404 Secure Coding Practices module. Each assignment is a small, self-contained web application implemented twice — once deliberately vulnerable, once hardened — so the two can be compared directly against the same attack. Every assignment folder includes the application source (`app.py`), a full write-up (`README.md`) covering methodology, test results, and mitigation, and supporting screenshots/transcripts under `assets/`.
 
 ## Assignments
