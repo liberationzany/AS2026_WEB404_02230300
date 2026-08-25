@@ -13,7 +13,7 @@
 | V2 | Weak, guessable signing secret (offline crackable, enables forgery) | CWE-798 / CWE-347 | A02:2021 — Cryptographic Failures | Critical |
 | V3 | No token expiry enforcement (fixed in the safe implementation; see Test 7) | CWE-613 | A07:2021 — Identification and Authentication Failures | Medium |
 
-**A note on evidence for this report:** the Chrome browser automation used for the previous four practicals was unavailable in this session, so this report documents each test as a full HTTP request/response transcript (captured with `curl` and small verification scripts) rather than a screenshot. For a text-based artifact like a JWT, the raw token and decoded payload are arguably more precise evidence than a screenshot would be, so each test below shows the exact command run and the exact response received.
+**A note on evidence for this report:** each browser-facing test below is backed by both a screenshot of the actual page and the underlying HTTP request/response transcript (captured with `curl` and small verification scripts). For a text-based artifact like a JWT, the raw token and decoded payload are arguably more precise evidence than a screenshot alone, so both are included together.
 
 ## 1. Objective
 
@@ -75,7 +75,11 @@ Because the *token itself* declares which algorithm to use, and the vulnerable c
 
 ## 6. Test results
 
+![Figure 0: Home page listing both login flows](assets/test1_home.jpg)
+
 ### Test 1: Baseline — legitimate login and profile access
+
+![Figure 1a: Vulnerable login form, prefilled with alice's credentials](assets/test1_vulnerable_login_form.jpg)
 
 ```
 $ curl -s -d "username=alice&password=orchid-47" http://127.0.0.1:8084/vulnerable-login
@@ -85,6 +89,8 @@ Issued JWT:
 ```
 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFsaWNlIiwicm9sZSI6InN0dWRlbnQiLCJpYXQiOjE3ODc2NDY5OTl9.YQTy1lEUfpz5a53vlsBj5vwIkYvHVI0F_d_PrEhRhHg
 ```
+
+![Figure 1b: Vulnerable login result showing the issued JWT](assets/test1_vulnerable_login_result.jpg)
 
 ```
 $ curl -s "http://127.0.0.1:8084/vulnerable-profile?token=<token above>"
@@ -100,6 +106,8 @@ Decoded payload:
   "iat": 1787646999
 }
 ```
+
+![Figure 1c: Vulnerable profile page showing the decoded, verified payload for alice](assets/test1_vulnerable_profile_baseline.jpg)
 
 This confirmed the login and token-verification flow worked correctly before any attack was attempted.
 
@@ -132,6 +140,8 @@ Decoded payload:
   "role": "admin"
 }
 ```
+
+![Figure 2: The vulnerable profile page accepts the unsigned alg:none token and shows "Elevated to admin"](assets/test2_none_alg_admin_elevation.jpg)
 
 | Item | Observation |
 | --- | --- |
@@ -176,6 +186,8 @@ Decoded payload:
 }
 ```
 
+![Figure 3: The vulnerable profile page accepts the forged, weak-secret-signed token and shows "Elevated to admin"](assets/test3_cracked_secret_admin_elevation.jpg)
+
 | Item | Observation |
 | --- | --- |
 | Vulnerability type | Weak/hard-coded signing secret → offline dictionary attack → arbitrary token forgery |
@@ -194,6 +206,8 @@ Response:
 Rejected: algorithm 'none' is not permitted; only HS256 is accepted
 ```
 
+![Figure 4: The safe profile page rejects the alg:none token](assets/test4_safe_rejects_none_alg.jpg)
+
 The safe decoder pins the expected algorithm itself rather than trusting the token's own header, so an attacker cannot simply declare their way past verification.
 
 ### Test 5: Weak-secret forgery rejected by the safe endpoint
@@ -209,9 +223,13 @@ Response:
 Rejected: invalid signature
 ```
 
+![Figure 5: The safe profile page rejects the forged token signed with the cracked weak secret](assets/test5_safe_rejects_forged_signature.jpg)
+
 Because the safe endpoint signs with a strong, randomly generated secret that is never derived from a dictionary word and is unrelated to the weak secret used elsewhere, the forged signature does not match and the token is rejected.
 
 ### Test 6: Safe baseline — legitimate login and profile access
+
+![Figure 6a: Safe login form, with the added token-lifetime field](assets/test6_safe_login_form.jpg)
 
 ```
 $ curl -s -d "username=alice&password=orchid-47&ttl=300" http://127.0.0.1:8084/safe-login
@@ -221,6 +239,8 @@ Issued JWT (note the added `exp` claim):
 ```
 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFsaWNlIiwicm9sZSI6InN0dWRlbnQiLCJpYXQiOjE3ODc2NDcwNzAsImV4cCI6MTc4NzY0NzM3MH0.v0Fg1gzllDYh9B2PUxYKipy803rKM2jJM1zl-lD0WXw
 ```
+
+![Figure 6b: Safe login result showing the issued JWT](assets/test6_safe_login_result.jpg)
 
 ```
 $ curl -s "http://127.0.0.1:8084/safe-profile?token=<token above>"
@@ -238,6 +258,8 @@ Decoded payload:
 }
 ```
 
+![Figure 6c: Safe profile page showing the decoded, verified payload including exp](assets/test6_safe_profile_baseline.jpg)
+
 This confirmed the safe flow works correctly end to end for a legitimate user.
 
 ### Test 7: Expired token rejected by the safe endpoint
@@ -254,6 +276,8 @@ Response:
 ```
 Rejected: token expired
 ```
+
+![Figure 7: The safe profile page rejects a token past its own exp claim](assets/test7_safe_rejects_expired_token.jpg)
 
 | Item | Observation |
 | --- | --- |
