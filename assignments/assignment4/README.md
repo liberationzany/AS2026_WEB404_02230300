@@ -1,6 +1,15 @@
 # Practical Report: CSRF Vulnerability Assessment
 
-**Submitted by:** Sonam Tenzin
+**Module:** WEB404 Secure Coding Practices
+**Practical:** 6 — CSRF vulnerable form and CSRF token prevention
+**Student:** Sonam Tenzin
+**Date:** 2026-08-25
+
+## Vulnerability Summary
+
+| ID | Vulnerability | CWE | OWASP Category | Severity |
+| --- | --- | --- | --- | --- |
+| V1 | Cross-site request forgery on a state-changing endpoint | CWE-352 | A01:2021 — Broken Access Control | High |
 
 ## 1. Objective
 
@@ -10,7 +19,17 @@ The purpose of this practical was to build an account-settings form (change emai
 
 All testing was carried out against a self-created application on `127.0.0.1` (localhost). The "attacker page" is part of the same lab application and only targets the lab's own endpoints; no external or third-party site was involved. CSRF testing must only be performed with explicit authorisation.
 
-## 3. Environment and setup
+## 3. Testing methodology
+
+This assessment followed a structured methodology for testing state-changing endpoints against forged requests:
+
+1. **Baseline verification** — confirm both settings forms function correctly for a legitimate, logged-in user (Tests 2–3).
+2. **Forgery construction** — build a simulated attacker page containing a hidden form that targets each settings endpoint using only the ambient session cookie (Test 4).
+3. **Exploitation** — trigger the forged submission from the victim's own active session and confirm an unauthorized state change occurs (Test 5).
+4. **Control verification** — repeat the identical forged request against the CSRF-token-protected endpoint to confirm it is rejected (Test 6).
+5. **Reporting** — document the forged request, the resulting state change (or rejection), and the responsible control, classified against CWE-352 above.
+
+## 4. Environment and setup
 
 | Component | Details |
 | --- | --- |
@@ -33,7 +52,7 @@ The server binds only to `127.0.0.1` and exposes three pages:
 - `/safe-settings` — the same form, additionally protected by a per-session CSRF token embedded as a hidden field.
 - `/attacker-page` — a simulated malicious page whose form targets either settings endpoint, playing the role of a third-party site the victim happens to visit while already logged in.
 
-## 4. Vulnerability description
+## 5. Vulnerability description
 
 The vulnerable endpoint accepts a POST request based solely on the session cookie:
 
@@ -45,7 +64,7 @@ session["email"] = new_email or session["email"]
 
 Because browsers attach cookies to a request based on the target domain, not the page that initiated the request, any page the victim's browser loads — including one hosted by an attacker — can cause the victim's browser to submit a POST to this endpoint with the victim's own session cookie attached. The server has no way to distinguish a request the victim intended to make from one an attacker's page silently triggered.
 
-## 5. Test results
+## 6. Test results
 
 ### Test 1: Baseline
 
@@ -109,7 +128,7 @@ Because the attacker's page has no way to read the victim's CSRF token (it is a 
 
 ![Figure 6: The safe endpoint rejected the forged request for lacking a valid CSRF token](assets/test6_safe_csrf_rejected.jpg)
 
-## 6. Security impact
+## 7. Security impact
 
 The findings show what a state-changing endpoint without CSRF protection exposes:
 
@@ -118,7 +137,7 @@ The findings show what a state-changing endpoint without CSRF protection exposes
 - **Silent exploitation** — the victim needs only to view a malicious page while an active session exists; no credentials are stolen and no obvious warning appears.
 - **Broad applicability** — any POST/PUT/DELETE endpoint that relies solely on a cookie for authentication is vulnerable to the same technique, not just settings forms.
 
-## 7. Mitigation and verification
+## 8. Mitigation and verification
 
 The `/safe-settings` feature validates a per-session token on every submission:
 
@@ -148,9 +167,24 @@ Recommended defenses for a production form are:
 - Avoid triggering state changes on GET requests, since GET requests can be forged even more easily (e.g. via an `<img>` tag).
 - Consider requiring re-authentication or a confirmation step for sensitive actions such as changing account recovery details.
 
-## 8. Conclusion
+## 9. Module concepts applied
+
+| Module topic | How it was applied |
+| --- | --- |
+| 4.2.1 CSRF attack mechanisms | Demonstrated by the simulated attacker page and forged form in Tests 4–5 |
+| 4.2.2 CSRF tokens | Demonstrated by the per-session token embedded in `/safe-settings` |
+| 4.2.3 CSRF prevention strategies | Verified in Test 6 and discussed in Section 8 |
+| 4.7.3 Secure cookie attributes | `SameSite` recommended as defense-in-depth in Section 8 |
+
+## 10. Conclusion
 
 The practical demonstrated that a form protected only by a session cookie can be forged by any page the victim's browser loads, successfully changing an account's email address with zero visible interaction from the victim. Requiring a per-session CSRF token that only the legitimate page can obtain blocked the identical forgery technique outright. Session cookies alone are not sufficient to authenticate a request's *origin* — an explicit, unpredictable token tied to the session is necessary to confirm that a request was actually initiated by the legitimate page.
+
+## References
+
+- OWASP Foundation. *Cross-Site Request Forgery Prevention Cheat Sheet*. owasp.org.
+- MITRE. *CWE-352: Cross-Site Request Forgery (CSRF)*. cwe.mitre.org.
+- Stuttard, D., & Pinto, M. (2011). *The Web Application Hacker's Handbook: Finding and Exploiting Security Flaws*. John Wiley & Sons.
 
 ## Appendix: Running and cleanup
 
