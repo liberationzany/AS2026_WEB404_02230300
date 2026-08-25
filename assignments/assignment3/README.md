@@ -1,6 +1,15 @@
 # Practical Report: Command Injection Vulnerability Assessment
 
-**Submitted by:** Sonam Tenzin
+**Module:** WEB404 Secure Coding Practices
+**Practical:** 2 — Command-line interface in a web application and command injection safeguards
+**Student:** Sonam Tenzin
+**Date:** 2026-08-25
+
+## Vulnerability Summary
+
+| ID | Vulnerability | CWE | OWASP Category | Severity |
+| --- | --- | --- | --- | --- |
+| V1 | OS command injection via shell metacharacters | CWE-78 | A03:2021 — Injection | Critical |
 
 ## 1. Objective
 
@@ -10,7 +19,17 @@ The purpose of this practical was to build a CLI-style feature in a web applicat
 
 All testing was carried out against a self-created application on `127.0.0.1` (localhost). The only commands executed were `ping` and harmless local commands (`whoami`) chained onto it during the exercise. No external system was tested. Command injection testing must only be performed with explicit authorisation.
 
-## 3. Environment and setup
+## 3. Testing methodology
+
+This assessment followed a structured black-box methodology for injection testing:
+
+1. **Baseline verification** — confirm the ping feature returns correct output for a legitimate host (Test 2).
+2. **Metacharacter probing** — append a shell operator (`&&`) to the input to test whether it is passed to a real shell rather than treated as literal text (Test 3).
+3. **Exploitation** — chain a benign but independently verifiable command (`whoami`) to prove arbitrary code execution without causing harm.
+4. **Control verification** — resubmit the identical payload against the safe endpoint's allow-list and argument-list implementation to confirm the fix holds (Test 4), then confirm legitimate input still works (Test 5).
+5. **Reporting** — document the executed command, the observed output, and the impact, classified against CWE-78 above.
+
+## 4. Environment and setup
 
 | Component | Details |
 | --- | --- |
@@ -31,7 +50,7 @@ The server binds only to `127.0.0.1` and exposes two ping features:
 - `/vulnerable-ping` — builds a shell command string from raw user input and runs it with `shell=True`.
 - `/safe-ping` — validates the input against a strict hostname/IPv4 allow-list, then invokes the `ping` binary directly as an argument list with `shell=False`.
 
-## 4. Vulnerability description
+## 5. Vulnerability description
 
 The vulnerable endpoint concatenates the user-supplied host directly into a shell command:
 
@@ -42,7 +61,7 @@ subprocess.run(command, shell=True, capture_output=True, text=True, timeout=8)
 
 Because the string is handed to a real shell, any shell metacharacter supplied by the user — `&&`, `;`, `|`, backticks, and so on — is interpreted by the shell rather than treated as part of a hostname. This lets an attacker append arbitrary commands to the one the developer intended to run.
 
-## 5. Test results
+## 6. Test results
 
 ### Test 1: Baseline
 
@@ -106,7 +125,7 @@ The identical payload that executed `whoami` against the vulnerable endpoint was
 
 ![Figure 5: Safe ping executing a legitimate host with no shell involved](assets/test5_safe_accepted.jpg)
 
-## 6. Security impact
+## 7. Security impact
 
 The findings show what an unvalidated CLI-in-a-web-app feature exposes:
 
@@ -115,7 +134,7 @@ The findings show what an unvalidated CLI-in-a-web-app feature exposes:
 - **Full system compromise potential** — depending on server privileges, an attacker could read sensitive files, install persistence, or pivot to other systems.
 - **Silent exploitation** — because the vulnerable page displays command output, the technique is trivially discoverable during testing, but in a hardened attacker's hands the same flaw would be exploited quietly.
 
-## 7. Mitigation and verification
+## 8. Mitigation and verification
 
 The `/safe-ping` feature applies two independent controls rather than relying on either alone:
 
@@ -146,9 +165,24 @@ Recommended defenses for a production CLI-in-a-web-app feature are:
 - Run any subprocess with the least privilege necessary, and apply a timeout to prevent resource exhaustion.
 - Avoid exposing raw command output to end users in a production system; log it server-side instead.
 
-## 8. Conclusion
+## 9. Module concepts applied
+
+| Module topic | How it was applied |
+| --- | --- |
+| 2.5.1 OS command injection techniques | Demonstrated in Test 3 via shell metacharacter chaining (`&&`) |
+| 2.5.2 Command injection prevention | Demonstrated in Tests 4–5 via allow-list validation and `shell=False` |
+| 2.7.1 Input validation and sanitization | The hostname allow-list pattern used by `/safe-ping` |
+| 2.7.3 Least privilege principle | Discussed in Section 8 as an additional recommended defense for production |
+
+## 10. Conclusion
 
 The practical demonstrated that concatenating user input into a shell command run with `shell=True` allows arbitrary command execution, verified by successfully running `whoami` through a feature intended only to ping a host. The safe implementation blocked the identical payload through strict input validation and, more fundamentally, by never invoking a shell at all — passing the command as an argument list instead. Avoiding `shell=True` and validating input at the boundary are both necessary: either control alone reduces risk, but together they close the vulnerability completely.
+
+## References
+
+- OWASP Foundation. *OS Command Injection Defense Cheat Sheet*. owasp.org.
+- MITRE. *CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')*. cwe.mitre.org.
+- Stuttard, D., & Pinto, M. (2011). *The Web Application Hacker's Handbook: Finding and Exploiting Security Flaws*. John Wiley & Sons.
 
 ## Appendix: Running and cleanup
 
