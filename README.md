@@ -1,6 +1,6 @@
 # WEB404 Secure Coding Practices
 
-This repository contains the practical assignments for the WEB404 Secure Coding Practices module. Each assignment is a small, self-contained web application implemented twice — once deliberately vulnerable, once hardened — so the two can be compared directly against the same attack. Every assignment folder includes the application source (`app.py`), a full write-up (`README.md`) covering methodology, test results, and mitigation, and supporting screenshots/transcripts under `assets/`.
+This repository contains the practical assignments for the WEB404 Secure Coding Practices module. Each assignment is a small, self-contained web application implemented twice, once deliberately vulnerable, once hardened so the two can be compared directly against the same attack. Every assignment folder includes the application source (`app.py`), a full write-up (`README.md`) covering methodology, test results, and mitigation, and supporting screenshots/transcripts under `assets/`.
 
 ## Assignments
 
@@ -11,8 +11,6 @@ This repository contains the practical assignments for the WEB404 Secure Coding 
 | 2 | [`assignments/assignment3`](assignments/assignment3) | Command injection | 8082 |
 | 6 | [`assignments/assignment4`](assignments/assignment4) | CSRF | 8083 |
 | 7 | [`assignments/assignment5`](assignments/assignment5) | JWT authentication | 8084 |
-
-The `#` column refers to the practical numbering in the module descriptor. Practicals 1 (Nikto vulnerability scanning) and 4 (Web Application Firewall configuration) are not yet included, as they require external tooling/infrastructure rather than a self-contained app.
 
 ## Running an assignment
 
